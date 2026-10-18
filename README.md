@@ -12,10 +12,41 @@ guess.
 **Stack:** Python · FastAPI · asyncio · PyMuPDF · Tesseract OCR · Gemini & Claude (structured
 output) · Pydantic · rembg / ONNX · openpyxl · pytest
 
-**Results on real supplier catalogs** ([details](docs/results.md)):
-- 107-page catalog: 206 products extracted, 139 fully verified, for **$0.63 total** (≈ $0.006 / page)
-- Cheap cascade vs. premium-only model on the same 66 pages: **0 price or MOQ disagreements**
-  at **~40× lower cost per page**
+---
+
+## Results on real supplier catalogs
+
+Measured on two real B2B catalogs. Aggregate numbers only: the catalogs belong to their brands
+and aren't redistributed. Full breakdown in [docs/results.md](docs/results.md).
+
+**Cheap cascade vs. premium-only model**: the same 66 pages, compared with `python -m app.compare`
+
+| | Premium only (Claude Opus) | Cascade (Gemini first) |
+|---|---|---|
+| AI cost per page | ≈ $0.054 | **$0.0013** (~40× cheaper) |
+| Products validated | 62 | 63 |
+
+On the 61 products both runs validated: **MRP, B2B price and MOQ agreed 100%, with 0 value
+disagreements.**
+
+The only differences were product-name wording (title vs. title + subtitle) and three products
+that one run validated and the other quarantined. No validated number differed.
+
+**Full catalog runs**
+
+| Catalog | Pages | Products | Validated | Quarantined | AI cost | Cost / page | Time |
+|---|---|---|---|---|---|---|---|
+| A: consumer accessories (1 PDF) | 107 | 206 | 139 (67%) | 67 | $0.63 | $0.006 | 16.6 min |
+| B: corporate gifting (10 PDF parts)\* | 157 | 148 | 120 (81%) | 28 | $0.21 | $0.0013 | 22.5 min |
+
+\* On catalog B, the upper tiers ran out of quota and credits mid-run. They were disabled
+automatically and the run finished on the cheapest tier, with affected pages flagged for re-run.
+
+**Where the cascade spent its effort (catalog A):** of 106 pages, 46 were accepted at the
+cheapest tier, 59 at the mid tier and 1 at the premium tier.
+
+A quarantined record isn't an error. It means a price or title couldn't be confirmed against
+the page text, so it's held for review instead of being published.
 
 ---
 
