@@ -19,7 +19,44 @@ output) · Pydantic · rembg / ONNX · openpyxl · pytest
 Measured on two real B2B catalogs. Aggregate numbers only: the catalogs belong to their brands
 and aren't redistributed. Full breakdown in [docs/results.md](docs/results.md).
 
-**Cheap cascade vs. premium-only model**: the same 66 pages, compared with `python -m app.compare`
+### Manual listing vs. this engine
+
+**Catalog A**: 107 pages, 206 products, 469 product photos
+
+| | Manual | Engine |
+|---|---|---|
+| Staff time | 55.4 h (≈ 7 working days) | **2.9 h** (−95%) |
+| Processing | — | 16.6 min, unattended |
+| Total cost | ₹3,992 | **₹272** (₹211 staff + ₹61 AI) |
+| Cost per product | ₹19.4 | **₹1.3** |
+
+**Catalog B**: 157 pages, 148 products, 218 product photos
+
+| | Manual | Engine |
+|---|---|---|
+| Staff time | 28.2 h (≈ 3.5 working days) | **1.5 h** (−95%) |
+| Processing | — | 22.5 min, unattended |
+| Total cost | ₹2,037 | **₹130** (₹111 staff + ₹20 AI) |
+| Cost per product | ₹13.8 | **₹0.9** |
+
+With the engine, people only review the quarantined products and spot-check the validated
+ones. Typing every product, and cropping and cleaning every photo, goes away. Engine time,
+AI cost and the product and photo counts are measured. Manual effort is an estimate from these
+assumptions, the defaults in the job page's built-in calculator:
+
+| Task | Minutes |
+|---|---|
+| Data entry per product (manual) | 6 |
+| Crop + background removal per photo (manual) | 3 |
+| Review per quarantined product (engine) | 2 |
+| Spot-check per validated product (engine) | 0.3 |
+
+Staff cost is ₹15,000 / month for 208 h (≈ ₹72 / h). These assumptions put a person at 30–42
+products a day, in line with the typical 20–40 for manual catalog listing.
+
+### Cheap cascade vs. premium-only model
+
+The same 66 pages, compared with `python -m app.compare`:
 
 | | Premium only (Claude Opus) | Cascade (Gemini first) |
 |---|---|---|
@@ -32,7 +69,7 @@ disagreements.**
 The only differences were product-name wording (title vs. title + subtitle) and three products
 that one run validated and the other quarantined. No validated number differed.
 
-**Full catalog runs**
+### Full catalog runs
 
 | Catalog | Pages | Products | Validated | Quarantined | AI cost | Cost / page | Time |
 |---|---|---|---|---|---|---|---|

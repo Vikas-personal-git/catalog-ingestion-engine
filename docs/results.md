@@ -5,6 +5,30 @@ and aren't redistributed here, so this page reports aggregate numbers only: no p
 prices. Costs come from provider-reported token counts and the per-model prices in
 [`app/config.py`](../app/config.py).
 
+## Manual listing vs. the engine
+
+| | Catalog A (206 products, 469 photos) | Catalog B (148 products, 218 photos) |
+|---|---|---|
+| Manual staff time | 55.4 h (≈ 7 working days) | 28.2 h (≈ 3.5 working days) |
+| Staff time with the engine | **2.9 h** | **1.5 h** |
+| Manual work saved | **95%** | **95%** |
+| Manual cost | ₹3,992 | ₹2,037 |
+| Engine cost (staff + AI) | **₹272** (₹211 + ₹61) | **₹130** (₹111 + ₹20) |
+| Cost per product, manual → engine | ₹19.4 → **₹1.3** | ₹13.8 → **₹0.9** |
+
+Product counts, photo counts, processing time and AI cost are measured. Manual effort uses the
+defaults of the built-in calculator on the job page:
+
+- 6 min of data entry per product
+- 3 min to crop and remove the background per photo
+- 2 min to review each quarantined product
+- 0.3 min to spot-check each validated product
+- ₹15,000 / month for 208 h of staff time
+
+Manually, every product is typed in and every photo is cropped and cleaned. With the engine,
+people only review quarantined products and spot-check validated ones. These assumptions imply
+30–42 products per person per day manually, consistent with the typical 20–40.
+
 ## Catalog A: 107-page consumer accessories catalog (single PDF)
 
 Full run with the default ladder (Gemini Flash-Lite → Gemini Flash → Claude Opus).
