@@ -144,7 +144,7 @@ def ocr_word_coverage(needle: str, haystack: str) -> float:
     words = _alnum(needle).translate(_OCR_CONFUSABLE).split()
     page_canon = _alnum(haystack).translate(_OCR_CONFUSABLE)
     page_words = set(page_canon.split())
-    page_joined = page_canon.replace(" ", "")  # OCR often glues words: "MY CAFEII"
+    page_joined = page_canon.replace(" ", "")  # OCR often glues words: "MY BREWII"
     if not words or not page_words:
         return 0.0
     found = 0
@@ -164,7 +164,7 @@ TITLE_BLOCK_RISE = 80     # …and above it (the model name sits above the descr
 def _word_found(word: str, words: set, joined: str, ocr: bool) -> bool:
     if word in words:
         return True
-    if ocr and len(word) >= 3 and word in joined:      # OCR glues words: "CAFEII"
+    if ocr and len(word) >= 3 and word in joined:      # OCR glues words: "BREWII"
         return True
     return ocr and len(word) >= 5 and any(fuzz.ratio(word, w) >= 85 for w in words)
 

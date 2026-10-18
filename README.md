@@ -12,6 +12,11 @@ guess.
 **Stack:** Python · FastAPI · asyncio · PyMuPDF · Tesseract OCR · Gemini & Claude (structured
 output) · Pydantic · rembg / ONNX · openpyxl · pytest
 
+**Results on real supplier catalogs** ([details](docs/results.md)):
+- 107-page catalog: 206 products extracted, 139 fully verified, for **$0.63 total** (≈ $0.006 / page)
+- Cheap cascade vs. premium-only model on the same 66 pages: **0 price or MOQ disagreements**
+  at **~40× lower cost per page**
+
 ---
 
 ## The problem
@@ -227,6 +232,7 @@ app/
   config.py             Environment-driven settings and model pricing
   templates/            Jinja2 UI (index, job)
 tests/                  pytest suite (no network)
+docs/results.md         Measured results on real catalogs
 docs/PRD.md             Original design spec
 ```
 

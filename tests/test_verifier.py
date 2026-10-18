@@ -95,9 +95,9 @@ def test_conflicting_slab_values_fail():
 
 
 def test_ocr_page_tolerates_recognition_noise():
-    ocr_page = "GIFTEECO\nMY CAFEII\nYour favourite, Ready in Minutes\nMRP: 27,999/-"
-    p = product(product_name="My Cafe II", sku_or_model=None, mrp=7999, b2b_price=None,
-                raw_text_snippet="MY CAFE II Your favourite, Ready in Minutes")
+    ocr_page = "ACME\nMY BREWII\nYour favourite, Ready in Minutes\nMRP: 27,999/-"
+    p = product(product_name="My Brew II", sku_or_model=None, mrp=7999, b2b_price=None,
+                raw_text_snippet="MY BREW II Your favourite, Ready in Minutes")
     v = verify_product(p, ocr_page, text_source="ocr")
     assert v.passed, v.failure_reasons
     assert any("OCR-misread" in r for r in v.failure_reasons)
@@ -148,17 +148,17 @@ def test_unusable_primary_photo_fails():
 
 def test_name_must_be_printed_in_its_title_block():
     blocks = [
-        TextBlock("HYDROBOIL GO", x0=60, y0=110, x1=280, y1=123),
+        TextBlock("AQUATHERM GO", x0=60, y0=110, x1=280, y1=123),
         TextBlock("Rechargeable Kettle & Cup", x0=60, y0=130, x1=360, y1=144),
         TextBlock("MRP: 11,999/-", x0=60, y0=400, x1=200, y1=415),
         TextBlock("Pairs with any Flask or bottle", x0=60, y0=700, x1=400, y1=715),  # far from the title
     ]
     text = "\n".join(b.text for b in blocks)
-    ok = product(product_name="HYDROBOIL GO Rechargeable Kettle & Cup", sku_or_model=None, mrp=11999,
-                 b2b_price=None, raw_text_snippet="HYDROBOIL GO")
+    ok = product(product_name="AQUATHERM GO Rechargeable Kettle & Cup", sku_or_model=None, mrp=11999,
+                 b2b_price=None, raw_text_snippet="AQUATHERM GO")
     assert verify_product(ok, text, blocks, products_on_page=1).passed
-    wrong = product(product_name="HYDROBOIL GO Rechargeable Kettle & Flask", sku_or_model=None, mrp=11999,
-                    b2b_price=None, raw_text_snippet="HYDROBOIL GO")
+    wrong = product(product_name="AQUATHERM GO Rechargeable Kettle & Flask", sku_or_model=None, mrp=11999,
+                    b2b_price=None, raw_text_snippet="AQUATHERM GO")
     v = verify_product(wrong, text, blocks, products_on_page=1)
     assert not v.passed and v.text_only_failure            # all numbers verified; only the name is wrong
     assert any("flask" in r for r in v.failure_reasons)

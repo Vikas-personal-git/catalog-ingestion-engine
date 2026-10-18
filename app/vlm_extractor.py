@@ -94,7 +94,7 @@ lifestyle filler) return an empty products list. Do not extract cross-sell or "f
 ("Find your…", "Also available", comparison rows) that show other products as small thumbnails \
 without their own price — those products are listed on their own pages.
    product_name: the model name exactly as printed in the product's title, with every suffix and \
-badge (e.g. "NOVA DIGITAL", "HYDROBOIL MINI DIGITAL", "SOLARIS X LITE (MARS)"). subtitle: the \
+badge (e.g. "LUMA DIGITAL", "AQUATHERM MINI DIGITAL", "ORBIT X LITE (MARS)"). subtitle: the \
 descriptor line printed directly under that title (e.g. "3-in-1 Lamp, Digital Clock & Organizer"), \
 or null. Take both from the title block only, never from family strips or feature text.
    brand: the brand as printed on the page (logo lettering or header). category: the catalog \
@@ -155,7 +155,7 @@ def _fit_image(image_bytes: bytes, max_long_edge: int, max_pixels: int) -> tuple
 
 
 def _merge_subtitle(record: dict) -> None:
-    """Listing name = title + descriptor line ("SOLARIS X LITE (MARS) Digital Clock with Pen Stand")."""
+    """Listing name = title + descriptor line ("ORBIT X LITE (MARS) Digital Clock with Pen Stand")."""
     name = (record.get("product_name") or "").strip()
     sub = (record.pop("subtitle", None) or "").strip()
     if name and sub and sub.lower() not in name.lower():

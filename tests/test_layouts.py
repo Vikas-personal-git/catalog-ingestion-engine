@@ -1,4 +1,4 @@
-"""Catalog layouts unlike the Gifteeco samples: hybrid (image + thin text layer) and dense grids."""
+"""Catalog layouts unlike the original sample catalogs: hybrid (image + thin text layer) and dense grids."""
 import asyncio
 import io
 import json
