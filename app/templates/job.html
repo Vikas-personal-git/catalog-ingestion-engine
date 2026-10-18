@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ job.filename }} · Catalog Ingestion Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0f1e; --surface: #111827; --surface2: #1e2a3d; --border: #243047;
+      --accent: #4f7fff; --accent2: #7c3aed; --success: #10b981; --warning: #f59e0b; --error: #ef4444;
+      --text: #f1f5f9; --muted: #94a3b8; --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    nav { position: sticky; top: 0; z-index: 10; background: rgba(10,15,30,.9); backdrop-filter: blur(12px);
+          border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .brand { font-size: 14px; font-weight: 600; color: var(--accent); }
+    nav a { font-size: 13px; color: var(--muted); text-decoration: none; }
+    nav a:hover { color: var(--text); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .muted { color: var(--muted); font-size: 12px; }
+
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 6px; word-break: break-word; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 20px; }
+    .badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
+
+    .status { display: inline-flex; gap: 8px; align-items: center; padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; }
+    .status.queued, .status.processing { background: rgba(79,127,255,.1); color: var(--accent); border: 1px solid rgba(79,127,255,.25); }
+    .status.done { background: rgba(16,185,129,.1); color: var(--success); border: 1px solid rgba(16,185,129,.25); }
+    .status.error { background: rgba(239,68,68,.1); color: var(--error); border: 1px solid rgba(239,68,68,.25); }
+    .spinner { width: 13px; height: 13px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress { margin: 22px 0; }
+    .bar { background: var(--surface2); border-radius: 100px; height: 8px; overflow: hidden; }
+    .fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .6s ease; }
+    .progress .muted { margin-top: 8px; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+    .stat .v { font-size: 26px; font-weight: 700; letter-spacing: -.03em; }
+    .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .green { color: var(--success); } .red { color: var(--error); } .blue { color: var(--accent); } .amber { color: var(--warning); }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin: 16px 0; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+
+    .alert { border-radius: var(--radius); padding: 14px 18px; margin: 14px 0; font-size: 13px; }
+    .alert.err { background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.25); }
+    .alert.warn { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.25); }
+    .alert h3 { font-size: 13px; margin-bottom: 6px; }
+    .alert.err h3 { color: var(--error); } .alert.warn h3 { color: var(--warning); }
+    .alert li { list-style: none; color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+    .btn { display: inline-flex; gap: 6px; align-items: center; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+           text-decoration: none; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: inherit; }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; }
+
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-top: 28px; }
+    .tab { padding: 10px 16px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border: none; background: none;
+           border-bottom: 2px solid transparent; font-family: inherit; }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tabpane { display: none; padding-top: 18px; }
+    .tabpane.active { display: block; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
+    .card.bad { border-color: rgba(239,68,68,.35); }
+    .thumb { height: 220px; display: flex; align-items: center; justify-content: center; cursor: zoom-in;
+             background: repeating-conic-gradient(#d9dee6 0% 25%, #ffffff 0% 50%) 50% / 16px 16px; }
+    .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .thumb.none { cursor: default; background: var(--surface2); color: var(--muted); font-size: 12px; }
+    .more-imgs { display: flex; gap: 6px; padding: 8px 12px 0; }
+    .more-imgs img { width: 44px; height: 44px; object-fit: contain; border-radius: 6px; cursor: zoom-in;
+                     background: repeating-conic-gradient(#d9dee6 0% 25%, #ffffff 0% 50%) 50% / 8px 8px; }
+    .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .name { font-weight: 600; font-size: 14px; line-height: 1.35; }
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
+    .kv dt { color: var(--muted); } .kv dd { font-family: 'JetBrains Mono', monospace; }
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .tag { font-size: 10.5px; padding: 2px 7px; border-radius: 100px; border: 1px solid var(--border); color: var(--muted); }
+    .tag.new { color: var(--success); border-color: rgba(16,185,129,.4); }
+    .tag.updated { color: var(--warning); border-color: rgba(245,158,11,.4); }
+    .reasons { font-size: 11.5px; color: var(--muted); padding-left: 14px; display: grid; gap: 2px; }
+    .reasons li.hard { color: #fca5a5; }
+    details summary { font-size: 11.5px; color: var(--muted); cursor: pointer; }
+    .card .foot { display: flex; gap: 8px; margin-top: auto; padding-top: 8px; }
+    .card .foot .btn { padding: 6px 10px; font-size: 12px; }
+    .empty { color: var(--muted); font-size: 13px; padding: 20px 0; }
+
+    /* modal */
+    .modal { position: fixed; inset: 0; background: rgba(3,6,15,.85); z-index: 50; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal.open { display: flex; }
+    .modal-inner { position: relative; max-width: min(1100px, 96vw); max-height: 92vh; overflow: auto; background: var(--surface);
+                   border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+    .modal-inner h4 { font-size: 13px; margin: 0 30px 10px 0; color: var(--muted); }
+    .modal-close { position: absolute; top: 8px; right: 12px; font-size: 22px; color: var(--muted); cursor: pointer; background: none; border: none; }
+    .lightbox { background: repeating-conic-gradient(#d9dee6 0% 25%, #ffffff 0% 50%) 50% / 20px 20px; }
+    .viewer-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+
+    /* manual vs tool comparison */
+    .roi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+    .roi-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 16px; }
+    .roi-head h2 { font-size: 16px; font-weight: 700; }
+    .roi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .roi-col { border-radius: 10px; padding: 16px; background: var(--surface2); border: 1px solid var(--border); }
+    .roi-col.manual { border-color: rgba(239,68,68,.35); }
+    .roi-col.tool { border-color: rgba(79,127,255,.4); }
+    .roi-col.saved { border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.06); }
+    .roi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+    .roi-big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 6px 0 2px; }
+    .roi-col.manual .roi-big { color: #fca5a5; } .roi-col.tool .roi-big { color: var(--accent); } .roi-col.saved .roi-big { color: var(--success); }
+    .roi-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .roi-money { font-size: 14px; font-weight: 600; margin-top: 8px; }
+    .roi-assumptions { margin-top: 14px; }
+    .roi-assumptions summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+    .roi-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+    .roi-inputs label { font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+    .roi-inputs input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 9px; font: inherit; font-size: 14px; }
+    .viewer-bar .btn { padding: 6px 12px; font-size: 12px; }
+    .lightbox img { display: block; max-width: 100%; max-height: 80vh; margin: 0 auto; }
+    .pageview { position: relative; display: inline-block; }
+    .pageview img { display: block; max-height: 80vh; max-width: 100%; }
+    .pageview .box { position: absolute; border: 2px solid #22d3ee; box-shadow: 0 0 0 9999px rgba(0,0,0,.0); background: rgba(34,211,238,.10); }
+    .pageview .box span { position: absolute; top: -18px; left: -2px; font-size: 10px; background: #22d3ee; color: #001; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <nav><span class="brand">⚙️ Catalog Ingestion Engine</span><a href="/">← New extraction</a></nav>
+
+  <div class="container">
+    <h1>{{ job.filename }}</h1>
+    {% if not demo %}<div class="muted mono">Job {{ job.job_id }}</div>{% endif %}
+    <div class="badges">
+      {% if job.tiers and not demo %}<span class="badge">🪜 {{ job.tiers }}</span>{% endif %}
+      {% if job.elapsed_seconds %}<span class="badge">⏱️ {{ (job.elapsed_seconds / 60)|round(1) }} min</span>{% endif %}
+      {% if job.document_pages %}<span class="badge">📄 {{ job.document_pages }} pages in document(s)</span>{% endif %}
+    </div>
+
+    <span class="status {{ job.status }}" id="status">
+      {% if job.status in ['queued', 'processing'] %}<span class="spinner"></span>{% endif %}
+      {{ {'queued': 'Queued', 'processing': 'Processing', 'done': 'Complete', 'error': 'Failed'}[job.status] }}
+    </span>
+
+    {% set total = job.total_pages if job.total_pages > 0 else 1 %}
+    <div class="progress">
+      <div class="bar"><div class="fill" id="fill" style="width: {{ 100 if job.status == 'done' else ((job.processed_pages / total * 100)|int) }}%"></div></div>
+      <div class="muted" id="stage">{{ job.stage or 'Waiting to start…' }}{% if job.total_pages %} — {{ job.processed_pages }} / {{ job.total_pages }} pages{% endif %}</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="v blue" id="s-pages">{{ job.processed_pages }}</div><div class="l">Pages processed</div></div>
+      <div class="stat"><div class="v green" id="s-valid">{{ job.validated_products }}</div><div class="l">{{ 'Products ready' if demo else 'Validated products' }}</div></div>
+      <div class="stat"><div class="v red" id="s-exc">{{ job.exception_products }}</div><div class="l">{{ 'Flagged for quick review' if demo else 'Quarantined' }}</div></div>
+      {% if demo %}
+      <div class="stat"><div class="v amber">{{ image_count }}</div><div class="l">Product photos cut out</div></div>
+      {% else %}
+      <div class="stat"><div class="v amber" id="s-cost">₹{{ '%.2f'|format(job.cost_inr) }}</div><div class="l">AI cost (${{ '%.4f'|format(job.cost_usd) }})</div></div>
+      <div class="stat"><div class="v" id="s-cpp">₹{{ '%.3f'|format(cost_per_page_inr) }}</div><div class="l">AI cost / page</div></div>
+      <div class="stat"><div class="v" id="s-esc">{{ escalated }}</div><div class="l">Pages escalated</div></div>
+      {% endif %}
+    </div>
+
+    {% if job.status == 'done' and job.validated_products %}
+    <div class="roi" id="roi"
+         data-products="{{ job.validated_products }}" data-review="{{ job.exception_products }}"
+         data-images="{{ image_count }}" data-seconds="{{ job.elapsed_seconds or 0 }}">
+      <div class="roi-head">
+        <h2>Manual work vs Catalog Ingestion Engine — this catalog</h2>
+        <span class="muted">Estimates — adjust the assumptions to match your team</span>
+      </div>
+      <div class="roi-grid">
+        <div class="roi-col manual">
+          <div class="roi-label">Done manually</div>
+          <div class="roi-big" id="roi-manual-time">—</div>
+          <div class="roi-sub" id="roi-manual-detail"></div>
+          <div class="roi-money" id="roi-manual-cost"></div>
+        </div>
+        <div class="roi-col tool">
+          <div class="roi-label">With the engine</div>
+          <div class="roi-big" id="roi-tool-time">—</div>
+          <div class="roi-sub" id="roi-tool-detail"></div>
+          <div class="roi-money" id="roi-tool-cost"></div>
+        </div>
+        <div class="roi-col saved">
+          <div class="roi-label">Saved on this catalog</div>
+          <div class="roi-big" id="roi-saved-time">—</div>
+          <div class="roi-sub" id="roi-saved-pct"></div>
+          <div class="roi-money" id="roi-month"></div>
+        </div>
+      </div>
+      <details class="roi-assumptions" open>
+        <summary>Assumptions</summary>
+        <div class="roi-inputs">
+          <label>Data entry per product (min)<input type="number" min="0" step="0.5" data-k="entry" value="6"></label>
+          <label>Crop + background removal per photo (min)<input type="number" min="0" step="0.5" data-k="photo" value="3"></label>
+          <label>Review per flagged product (min)<input type="number" min="0" step="0.5" data-k="review" value="2"></label>
+          <label>Spot-check per ready product (min)<input type="number" min="0" step="0.1" data-k="spot" value="0.3"></label>
+          <label>Listing staff salary (₹ / month)<input type="number" min="0" step="500" data-k="salary" value="15000"></label>
+          <label>Working hours / month<input type="number" min="1" step="1" data-k="hours" value="208"></label>
+          <label>Catalogs like this per month<input type="number" min="1" step="1" data-k="catalogs" value="4"></label>
+        </div>
+      </details>
+    </div>
+    {% endif %}
+
+    {% if not demo %}
+    <div class="panel">
+      <table>
+        <thead><tr><th>Model tier</th><th>Pages tried</th><th>Pages accepted</th><th>Tokens in / out</th><th>Cost</th><th></th></tr></thead>
+        <tbody id="tiers">
+        {% for t in job.tier_stats %}
+          <tr><td class="mono">{{ t.tier }}</td><td>{{ t.pages_attempted }}</td><td>{{ t.pages_accepted }}</td>
+              <td class="mono">{{ '{:,}'.format(t.input_tokens) }} / {{ '{:,}'.format(t.output_tokens) }}</td>
+              <td class="mono">${{ '%.4f'|format(t.cost_usd) }}</td>
+              <td class="muted">{{ ('disabled: ' ~ t.disabled_reason) if t.disabled_reason else '' }}</td></tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">Model usage appears here once extraction starts.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if job.error_message %}
+    <div class="alert err"><h3>Job failed</h3><div class="muted">{{ job.error_message }}</div></div>
+    {% endif %}
+    {% if job.page_errors %}
+    <div class="alert err"><h3>{{ job.page_errors|length }} page(s) could not be extracted</h3>
+      <ul>{% for i in job.page_errors[:15] %}<li>page {{ i.page_number }} ({{ i.source }}): {{ i.reason|customer_text if demo else i.reason }}</li>{% endfor %}
+      {% if job.page_errors|length > 15 %}<li>… see exceptions log</li>{% endif %}</ul></div>
+    {% endif %}
+    {% set shown_warnings = [] %}
+    {% for w in job.page_warnings %}{% if not demo or w.reason.startswith('possible missed') %}{% set _ = shown_warnings.append(w) %}{% endif %}{% endfor %}
+    {% if shown_warnings %}
+    <div class="alert warn"><h3>{{ shown_warnings|length }} page(s) need attention{{ ' — please check these pages for products not listed' if demo else ' — possibly missed products, or re-run needed because a stronger model was unavailable' }}</h3>
+      <ul>{% for i in shown_warnings %}<li>page {{ i.page_number }}: {{ i.reason }}
+        {% if previews.get(i.page_number) %} · <a href="#" style="color:var(--warning)" onclick="openPage({{ i.page_number }}, []); return false;">view page</a>{% endif %}</li>{% endfor %}</ul></div>
+    {% endif %}
+
+    {% if job.status == 'done' %}
+    <div class="actions">
+      <a class="btn primary" href="/download/{{ job.job_id }}/zip" title="Folders by Category / Brand / Product with images, plus Excel and CSV">⬇ ZIP — folders + Excel</a>
+      <a class="btn" href="/download/{{ job.job_id }}/excel">Excel only</a>
+      {% if not demo %}
+      <a class="btn" href="/download/{{ job.job_id }}/json">Clean JSON</a>
+      <a class="btn" href="/download/{{ job.job_id }}/exceptions">Exceptions JSON</a>
+      <a class="btn" href="/download/{{ job.job_id }}/log">Exceptions log</a>
+      {% endif %}
+    </div>
+    {% if not demo %}
+    <div class="muted">Compared with earlier uploads: {{ job.new_products }} new · {{ job.updated_products }} with changes ·
+      {{ job.unchanged_products }} unchanged{% if job.validated_products %} · AI cost per validated product ₹{{ '%.3f'|format(cost_per_product_inr) }}{% endif %}</div>
+    {% endif %}
+
+    <div class="tabs">
+      <button class="tab active" data-tab="t-valid">{{ 'Ready' if demo else 'Validated' }} ({{ validated|length }})</button>
+      <button class="tab" data-tab="t-exc">{{ 'Needs review' if demo else 'Quarantined' }} ({{ exceptions|length }})</button>
+      <button class="tab" data-tab="t-pages">Pages ({{ job.pages|length }})</button>
+      {% if job.skipped_pages %}<button class="tab" data-tab="t-skip">Skipped ({{ job.skipped_pages|length }})</button>{% endif %}
+    </div>
+
+    {% macro product_card(p, bad) %}
+      <div class="card {{ 'bad' if bad }}">
+        {% if p.image_paths %}
+          {% set originals = p.original_image_paths or [] %}
+          <div class="thumb" onclick="openImage('/output/{{ job.job_id }}/{{ p.image_paths[0] }}', {{ p.product_name|tojson|forceescape }}, {{ (('/output/' ~ job.job_id ~ '/' ~ originals[0]) if originals else '')|tojson|forceescape }})">
+            <img src="/output/{{ job.job_id }}/{{ p.image_paths[0] }}" alt="" loading="lazy" /></div>
+          {% if p.image_paths|length > 1 %}<div class="more-imgs">
+            {% for path in p.image_paths[1:8] %}{% set orig = originals[loop.index] if originals|length > loop.index else '' %}<img src="/output/{{ job.job_id }}/{{ path }}" loading="lazy" alt=""
+              onclick="openImage('/output/{{ job.job_id }}/{{ path }}', {{ p.product_name|tojson|forceescape }}, {{ (('/output/' ~ job.job_id ~ '/' ~ orig) if orig else '')|tojson|forceescape }})" />{% endfor %}</div>{% endif %}
+        {% else %}
+          <div class="thumb none">{{ 'not cropped — quarantined' if bad else 'no product photo found' }}</div>
+        {% endif %}
+        <div class="body">
+          <div class="name">{{ p.product_name }}</div>
+          <dl class="kv">
+            {% if p.sku_or_model %}<dt>SKU</dt><dd>{{ p.sku_or_model }}</dd>{% endif %}
+            <dt>MRP</dt><dd>{{ ('₹' ~ '{:,.2f}'.format(p.mrp).replace('.00', '')) if p.mrp is not none else '—' }}</dd>
+            <dt>B2B</dt><dd>{{ ('₹' ~ '{:,.2f}'.format(p.b2b_price).replace('.00', '')) if p.b2b_price is not none else '—' }}</dd>
+            <dt>MOQ</dt><dd>{{ p.moq if p.moq is not none else '—' }}</dd>
+            {% for s in p.price_slabs %}<dt>{{ s.min_qty }}{{ '-' ~ s.max_qty if s.max_qty else '+' }} pcs</dt><dd>₹{{ '%g'|format(s.price) }}</dd>{% endfor %}
+            {% if p.specifications.capacity_or_size %}<dt>Size</dt><dd>{{ p.specifications.capacity_or_size }}</dd>{% endif %}
+            {% if p.specifications.material %}<dt>Material</dt><dd>{{ p.specifications.material }}</dd>{% endif %}
+            {% if p.specifications.dimensions %}<dt>Dims</dt><dd>{{ p.specifications.dimensions }}</dd>{% endif %}
+            {% if p.color_variants %}<dt>Colours</dt><dd>{{ p.color_variants|join(', ') }}</dd>{% endif %}
+          </dl>
+          <div class="tags">
+            <span class="tag">p{{ p.page }}</span>
+            <span class="tag">score {{ '%.2f'|format(p.confidence_score) }}</span>
+            {% if p.tier and not demo %}<span class="tag">{{ p.tier.split(':')[1] }}</span>{% endif %}
+            {% if not bad %}<span class="tag {{ p.change_status }}">{{ p.change_status }}</span>{% endif %}
+          </div>
+          {% set all_reasons = p.failure_reasons if bad else (p.warnings or []) %}
+          {% set reasons = all_reasons|reject('internal_note')|list if demo else all_reasons %}
+          {% set notes = reasons + (p.image_warnings or []) %}
+          {% if bad %}
+            <ul class="reasons">{% for r in reasons %}<li class="{{ '' if r.startswith('warning') else 'hard' }}">{{ r|customer_text if demo else r }}</li>{% endfor %}</ul>
+          {% elif notes %}
+            <details><summary>{{ notes|length }} note(s)</summary><ul class="reasons">{% for r in notes %}<li>{{ r|customer_text if demo else r }}</li>{% endfor %}</ul></details>
+          {% endif %}
+          {% if p.description %}<details><summary>Description</summary><div class="muted" style="margin-top:4px">{{ p.description }}</div></details>{% endif %}
+          <div class="foot">
+            {% if previews.get(p.page) %}<button class="btn" onclick='openPage({{ p.page }}, {{ p.images|tojson }}, {{ p.product_name|tojson }})'>View on page</button>{% endif %}
+          </div>
+        </div>
+      </div>
+    {% endmacro %}
+
+    <div class="tabpane active" id="t-valid">
+      {% if validated %}<div class="grid">{% for p in validated %}{{ product_card(p, false) }}{% endfor %}</div>
+      {% else %}<div class="empty">No validated products.</div>{% endif %}
+    </div>
+    <div class="tabpane" id="t-exc">
+      {% if exceptions %}<div class="grid">{% for p in exceptions %}{{ product_card(p, true) }}{% endfor %}</div>
+      {% else %}<div class="empty">Nothing quarantined.</div>{% endif %}
+      {% if invalid_records %}<div class="alert warn"><h3>{{ invalid_records|length }} malformed model record(s) discarded</h3>
+        <ul>{% for r in invalid_records[:10] %}<li>page {{ r.page }}: {{ r.error[:200] }}</li>{% endfor %}</ul></div>{% endif %}
+    </div>
+    <div class="tabpane" id="t-pages">
+      <div class="panel"><table>
+        <thead><tr><th>Page</th><th>Source</th><th>Products</th><th>Ready</th>{% if not demo %}<th>Accepted from</th><th>Model attempts</th>{% endif %}<th></th></tr></thead>
+        <tbody>
+        {% for pg in job.pages %}
+          <tr><td>{{ pg.page_number }}</td><td class="muted">{{ pg.source }}</td><td>{{ pg.products }}</td><td>{{ pg.validated }}</td>
+            {% if not demo %}
+            <td class="mono">{{ pg.tier_used.split(':')[1] if pg.tier_used else '—' }}{% if pg.needs_rerun %}<div class="amber" style="font-size:11px">needs re-run</div>{% endif %}</td>
+            <td class="muted">{% for a in pg.attempts %}<div><b>{{ a.tier.split(':')[1] }}</b>: {{ a.outcome }}</div>{% endfor %}</td>
+            {% endif %}
+            <td>{% if pg.preview %}<a class="btn" style="padding:4px 9px;font-size:12px" href="#" onclick="openPage({{ pg.page_number }}, []); return false;">view</a>{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="tabpane" id="t-skip">
+      <div class="panel"><table><thead><tr><th>Page</th><th>Source</th><th>Reason</th></tr></thead><tbody>
+        {% for i in job.skipped_pages %}<tr><td>{{ i.page_number }}</td><td class="muted">{{ i.source }}</td><td>{{ i.reason }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="modal" id="modal" onclick="if (event.target === this) closeModal()">
+    <div class="modal-inner"><button class="modal-close" onclick="closeModal()">×</button>
+      <h4 id="modal-title"></h4><div id="modal-body"></div></div>
+  </div>
+
+  <script>
+    const JOB_ID = {{ job.job_id|tojson }};
+    const PREVIEWS = {{ previews|tojson }};
+
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+      document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === t.dataset.tab));
+    }));
+
+    const modal = document.getElementById('modal');
+    function closeModal() { modal.classList.remove('open'); document.getElementById('modal-body').replaceChildren(); }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    const BACKGROUNDS = {
+      checker: 'repeating-conic-gradient(#d9dee6 0% 25%, #ffffff 0% 50%) 50% / 20px 20px',
+      white: '#ffffff',
+      dark: '#1b1f27',
+    };
+
+    function openImage(src, title, originalSrc) {
+      const titleEl = document.getElementById('modal-title');
+      const wrap = document.createElement('div'); wrap.className = 'lightbox';
+      const img = document.createElement('img');
+      const bar = document.createElement('div'); bar.className = 'viewer-bar';
+      const dl = document.createElement('a'); dl.className = 'btn'; dl.textContent = '⬇ Download';
+      let showing = src;
+
+      function show(url, label) {
+        showing = url; img.src = url; dl.href = url; dl.download = url.split('/').pop();
+        img.onload = () => { titleEl.textContent = `${title} — ${label} · ${img.naturalWidth}×${img.naturalHeight}px`; };
+      }
+      function button(text, onClick) {
+        const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = text;
+        b.onclick = onClick; return b;
+      }
+      for (const [name, bg] of Object.entries(BACKGROUNDS)) {
+        bar.appendChild(button(name === 'checker' ? 'Checkerboard' : name[0].toUpperCase() + name.slice(1),
+                               () => { wrap.style.background = bg; }));
+      }
+      if (originalSrc) {
+        bar.appendChild(button('Cut-out', () => show(src, 'cut-out (transparent background)')));
+        bar.appendChild(button('Original', () => show(originalSrc, 'original crop before background removal')));
+      }
+      bar.appendChild(dl);
+      wrap.style.background = BACKGROUNDS.checker;
+      wrap.appendChild(img);
+      show(src, 'cut-out (transparent background)');
+      document.getElementById('modal-body').replaceChildren(bar, wrap);
+      modal.classList.add('open');
+    }
+
+    function openPage(page, images, title) {
+      const src = PREVIEWS[page];
+      if (!src) return;
+      document.getElementById('modal-title').textContent = `Page ${page}` + (title ? ` — boxes extracted for “${title}”` : '');
+      const wrap = document.createElement('div'); wrap.className = 'pageview';
+      const img = document.createElement('img'); img.src = `/output/${JOB_ID}/${src}`;
+      wrap.appendChild(img);
+      for (const im of images || []) {
+        const [y0, x0, y1, x1] = im.box_2d;
+        const b = document.createElement('div'); b.className = 'box';
+        Object.assign(b.style, { top: y0 / 10 + '%', left: x0 / 10 + '%', height: (y1 - y0) / 10 + '%', width: (x1 - x0) / 10 + '%' });
+        const lab = document.createElement('span'); lab.textContent = im.type; b.appendChild(lab);
+        wrap.appendChild(b);
+      }
+      document.getElementById('modal-body').replaceChildren(wrap);
+      modal.classList.add('open');
+    }
+
+    // ── Manual vs Catalog Ingestion Engine estimate ──────────────────────────────────────
+    (function () {
+      const roi = document.getElementById('roi');
+      if (!roi) return;
+      const inputs = [...roi.querySelectorAll('input[data-k]')];
+      const STORE = 'roi-assumptions';
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORE) || '{}');
+        inputs.forEach(i => { if (saved[i.dataset.k] !== undefined) i.value = saved[i.dataset.k]; });
+      } catch (e) { /* storage unavailable — defaults are fine */ }
+
+      const fmtTime = min => min < 90 ? `${Math.round(min)} min` : `${(min / 60).toFixed(1)} hours`;
+      const fmtDays = min => `${(min / 60 / 8).toFixed(1)} working days`;
+      const rupees = v => '₹' + Math.round(v).toLocaleString('en-IN');
+      const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+      function update() {
+        const v = Object.fromEntries(inputs.map(i => [i.dataset.k, Math.max(0, parseFloat(i.value) || 0)]));
+        const ready = +roi.dataset.products, review = +roi.dataset.review, photos = +roi.dataset.images;
+        const machineMin = (+roi.dataset.seconds) / 60;
+        const allProducts = ready + review;
+        const photosPerProduct = ready ? photos / ready : 0;
+        const perHour = v.hours ? v.salary / v.hours : 0;
+
+        // Manually: every product typed in, every photo cropped and cleaned.
+        const manualMin = allProducts * v.entry + allProducts * photosPerProduct * v.photo;
+        // With the tool: people only review flagged products and spot-check ready ones.
+        const toolMin = review * v.review + ready * v.spot;
+        const savedMin = Math.max(0, manualMin - toolMin);
+
+        set('roi-manual-time', fmtTime(manualMin));
+        set('roi-manual-detail', `${allProducts} products typed in, ~${Math.round(allProducts * photosPerProduct)} photos cropped & cleaned · ${fmtDays(manualMin)}`);
+        set('roi-manual-cost', `${rupees(manualMin / 60 * perHour)} of staff time`);
+        set('roi-tool-time', fmtTime(toolMin));
+        set('roi-tool-detail', `People: review ${review} flagged + spot-check ${ready} ready products. Processing runs unattended (${Math.round(machineMin)} min).`);
+        set('roi-tool-cost', `${rupees(toolMin / 60 * perHour)} of staff time`);
+        set('roi-saved-time', fmtTime(savedMin));
+        set('roi-saved-pct', manualMin ? `${Math.round(savedMin / manualMin * 100)}% less manual work on this catalog` : '');
+        const monthMin = savedMin * v.catalogs;
+        set('roi-month', `${v.catalogs} catalogs/month → ${fmtTime(monthMin)} (${fmtDays(monthMin)}) and ${rupees(monthMin / 60 * perHour)} of staff time freed`);
+        try { localStorage.setItem(STORE, JSON.stringify(v)); } catch (e) { /* ignore */ }
+      }
+      inputs.forEach(i => i.addEventListener('input', update));
+      update();
+    })();
+
+    {% if job.status in ['queued', 'processing'] %}
+    const money = v => '₹' + v.toFixed(2);
+    async function poll() {
+      try {
+        const j = await (await fetch(`/api/jobs/${JOB_ID}`)).json();
+        if (j.status === 'done' || j.status === 'error') { location.reload(); return; }
+        const total = j.total_pages || 1;
+        document.getElementById('fill').style.width = Math.min(100, Math.round(j.processed_pages / total * 100)) + '%';
+        document.getElementById('stage').textContent = (j.stage || 'Waiting…') + (j.total_pages ? ` — ${j.processed_pages} / ${j.total_pages} pages` : '');
+        document.getElementById('s-pages').textContent = j.processed_pages;
+        const costEl = document.getElementById('s-cost'), cppEl = document.getElementById('s-cpp');
+        if (costEl) costEl.textContent = money(j.cost_inr);
+        if (cppEl) cppEl.textContent = '₹' + (j.processed_pages ? j.cost_inr / j.processed_pages : 0).toFixed(3);
+        const tb = document.getElementById('tiers');
+        if (tb && j.tier_stats.length) {
+          tb.replaceChildren(...j.tier_stats.map(t => {
+            const tr = document.createElement('tr');
+            for (const [v, mono] of [[t.tier, 1], [t.pages_attempted], [t.pages_accepted],
+                                     [`${t.input_tokens.toLocaleString()} / ${t.output_tokens.toLocaleString()}`, 1],
+                                     ['$' + t.cost_usd.toFixed(4), 1], [t.disabled_reason ? 'disabled: ' + t.disabled_reason : '']]) {
+              const td = document.createElement('td'); td.textContent = v; if (mono) td.className = 'mono'; tr.appendChild(td);
+            }
+            return tr;
+          }));
+        }
+      } catch (e) { /* transient — keep polling */ }
+      setTimeout(poll, 2000);
+    }
+    poll();
+    {% endif %}
+  </script>
+</body>
+</html>
